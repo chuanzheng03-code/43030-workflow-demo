@@ -1,0 +1,54 @@
+name: Git Practice Workflow
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update_html_and_readme:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Update HTML for my account
+        if: github.actor == 'chuanzheng03-code'
+        env:
+          ACTOR: ${{ github.actor }}
+        run: |
+          echo "Triggered by: $ACTOR"
+          printf '\n<p>Updated by %s on %s</p>\n' \
+            "$ACTOR" \
+            "$(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> index.html
+          cat index.html
+
+      - name: Update README log
+        if: github.actor == 'chuanzheng03-code'
+        env:
+          ACTOR: ${{ github.actor }}
+        run: |
+          TIMESTAMP=$(date -u '+%Y-%m-%d %H:%M:%S UTC')
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          printf '\n### Updated by %s on %s [Commit: %s]\n' \
+            "$ACTOR" "$TIMESTAMP" "$SHORT_SHA" >> README.md
+          cat README.md
+
+      - name: Commit and push changes
+        if: github.actor == 'chuanzheng03-code'
+        run: |
+          git config --local user.name "github-actions[bot]"
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git add index.html README.md
+
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Workflow: update HTML and README"
+            git push origin HEAD:main
+          fi
